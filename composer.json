@@ -1,5 +1,5 @@
 {
-    "name": "golovchanskiy/parseTorg12",
+    "name": "golovchanskiy/parse-torg12",
     "description": "Parse TORG12 from Excel (.xls, .xlsx)",
     "keywords": [
         "phpexcel",
