@@ -51,7 +51,7 @@ class InvoiceRow extends Model
     public $price_without_tax;
 
     /**
-     * Количество (Масса нетто)
+     * Количество
      *
      * @var int
      */
