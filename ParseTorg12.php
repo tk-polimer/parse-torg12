@@ -95,8 +95,8 @@ class ParseTorg12
 
     /**
      * @param string $filePath Путь к файлу
-     * @param array $taxRateList Доступные ставки НДС
-     * @param int $defaultTaxRate ставка НДС по умолчанию
+     * @param array $taxRateList Список доступных ставкок НДС
+     * @param int $defaultTaxRate Ставка НДС по умолчанию
      */
     public function __construct($filePath, array $taxRateList = [0, 10, 18], $defaultTaxRate = 18)
     {

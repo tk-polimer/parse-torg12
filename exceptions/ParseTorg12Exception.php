@@ -3,7 +3,8 @@
 namespace golovchanskiy\parseTorg12\exceptions;
 
 /**
- * Class ParseTorg12Exception
+ * Критическая ошибка обработки файла
+ *
  */
 class ParseTorg12Exception extends \Exception
 {

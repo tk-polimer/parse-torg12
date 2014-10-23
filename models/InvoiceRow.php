@@ -5,7 +5,7 @@ namespace golovchanskiy\parseTorg12\models;
 /**
  * Строка товарной накладной
  */
-class InvoiceRow
+class InvoiceRow extends Model
 {
 
     /**
@@ -57,25 +57,4 @@ class InvoiceRow
      */
     public $cnt;
 
-    /**
-     * Список ошибок обработки строки накладной
-     *
-     * @var array
-     */
-    public $errors = [];
-
-    /**
-     * Проверить валидность накладной
-     *
-     * @return bool
-     */
-    public function isValid()
-    {
-        if (empty($this->errors)) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-} 
+}

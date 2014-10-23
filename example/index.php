@@ -4,6 +4,7 @@
     <title>parseTorg12: пример исполльзования</title>
 </head>
 <body>
+
 <?php
 
 require '../vendor/autoload.php';
@@ -60,5 +61,6 @@ foreach ($files as $filePath) {
 
 }
 ?>
+
 </body>
 </html>
