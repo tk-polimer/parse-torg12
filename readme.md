@@ -12,12 +12,12 @@ ParseTorg12
 
 Выполните команду
 
-    php composer.phar require "golovchanskiy/parse-torg12" "*"
+    php composer.phar require "golovchanskiy/parse-torg12" "dev-master"
 
 или добавьте в composer.json
 
     "require": {
-        "golovchanskiy/parse-torg12": "*"
+        "golovchanskiy/parse-torg12": "dev-master"
     },
 
 Пример использования
