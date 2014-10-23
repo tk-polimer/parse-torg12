@@ -32,19 +32,24 @@ ParseTorg12
     $parseTorg12 = new torg12\ParseTorg12('./testTorg12.xls');
 
     try {
+    
         // запускаем обработку накладной
         $parseTorg12->parse();
-    } catch (torg12\ParseTorg12Exception $e) {
+        
+        if (!$parseTorg12->invoice->isValid()) {
+            // выводим ошибки обработки накладной
+            echo implode('<br>', $parseTorg12->invoice->errors);
+        }
+    
+        // выводим результат работы
+        var_dump((array)$parseTorg12->invoice);
+            
+    } catch (torg12\exceptions\ParseTorg12Exception $e) {
+    
         // выводим ошибку обработки
         echo $e->getMessage();
+        
     }
-
-    if (!empty($parseTorg12->criticalErrors)) {
-        // выводим ошибки в данных
-        echo implode('<br>', $parseTorg12->criticalErrors);
-    }
-
-    // выводим результат работы
-    var_dump((array)$parseTorg12->invoice);
+    
 
 Примеры накладных см. в папке example

@@ -34,7 +34,21 @@ foreach ($files as $filePath) {
         // запускаем обработку накладной
         $parseTorg12->parse();
 
-    } catch (torg12\ParseTorg12Exception $e) {
+        if (!$parseTorg12->invoice->isValid()) {
+            echo '<pre>';
+            echo '<span style="color: red; font-size: 20px; font-weight: bold;">При обработке накладной обнаружены ошибки:</span><br>';
+            echo implode('<br>', $parseTorg12->invoice->errors);
+            echo '</pre>';
+            echo '<br>';
+        }
+
+        // выводим результат работы
+        echo '<pre>';
+        echo '<span style="color: green; font-size: 20px; font-weight: bold;">Результат:</span><br>';
+        var_dump((array)$parseTorg12->invoice);
+        echo '</pre>';
+
+    } catch (torg12\exceptions\ParseTorg12Exception $e) {
 
         echo '<pre>';
         echo '<span style="color: red; font-size: 20px; font-weight: bold;">Ошибка:</span><br>';
@@ -44,19 +58,6 @@ foreach ($files as $filePath) {
 
     }
 
-    if (!empty($parseTorg12->criticalErrors)) {
-        echo '<pre>';
-        echo '<span style="color: red; font-size: 20px; font-weight: bold;">При обработке накладной обнаружены критические ошибки:</span><br>';
-        echo implode('<br>', $parseTorg12->criticalErrors);
-        echo '</pre>';
-        echo '<br>';
-    }
-
-    // выводим результат работы
-    echo '<pre>';
-    echo '<span style="color: green; font-size: 20px; font-weight: bold;">Результат:</span><br>';
-    var_dump((array)$parseTorg12->invoice);
-    echo '</pre>';
 }
 ?>
 </body>

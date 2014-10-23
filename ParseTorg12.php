@@ -2,9 +2,13 @@
 
 namespace golovchanskiy\parseTorg12;
 
+use golovchanskiy\parseTorg12\models as models;
+use golovchanskiy\parseTorg12\exceptions\ParseTorg12Exception;
+
 /**
  * Разобрать товарную накладную по форме ТОРГ12 в формате Excel (.xls, .xlsx)
  *
+ * @author Anton.Golovchanskiy <anton.golovchanskiy@gmail.com>
  */
 class ParseTorg12
 {
@@ -35,16 +39,9 @@ class ParseTorg12
     /**
      * Товарная накладная
      *
-     * @var Invoice
+     * @var models\Invoice
      */
     public $invoice;
-
-    /**
-     * Список критических ошибок
-     *
-     * @var array
-     */
-    public $criticalErrors;
 
     /**
      * Атрибуты заголовка накладной
@@ -129,13 +126,13 @@ class ParseTorg12
         }
 
         // создаем накладную
-        $this->invoice = new Invoice();
+        $this->invoice = new models\Invoice();
 
         foreach ($objPHPExcel->getWorksheetIterator() as $worksheet) {
             $this->setWorksheet($worksheet);
 
             // очищаем список критических ошибок, т.к. накладная может быть не на первом листе
-            $this->criticalErrors = [];
+            $this->invoice->errors = [];
 
             // определяем последнюю строку документа
             $this->highestRow = $this->worksheet->getHighestRow();
@@ -160,7 +157,7 @@ class ParseTorg12
                 // проверяем, что обработаны все строки накладной
                 $lastRow = end($this->invoice->rows);
                 if ($lastRow->num != count($this->invoice->rows)) {
-                    $this->criticalErrors['count_rows'] = 'Порядковый номер последней строки накладной не совпадает с количеством обработанных строк';
+                    $this->invoice->errors['count_rows'] = 'Порядковый номер последней строки накладной не совпадает с количеством обработанных строк';
                 }
 
                 break;
@@ -296,14 +293,14 @@ class ParseTorg12
         if ($documentNumber) {
             $this->invoice->number = $documentNumber;
         } else {
-            $this->criticalErrors['invoice_number'] = 'Не найден номер накладной';
+            $this->invoice->errors['invoice_number'] = 'Не найден номер накладной';
         }
 
         if (isset($documentDate)) {
             $documentTime = strtotime($documentDate);
             $this->invoice->date = date('Y-m-d', $documentTime);
         } else {
-            $this->criticalErrors['invoice_date'] = 'Не найдена дата накладной';
+            $this->invoice->errors['invoice_date'] = 'Не найдена дата накладной';
         }
 
     }
@@ -315,7 +312,7 @@ class ParseTorg12
      */
     private function parseRowsHeader()
     {
-        
+
         $match = function ($cellValue, $setting) {
             if (is_array($setting)) {
                 return in_array($cellValue, $setting);
@@ -542,7 +539,7 @@ class ParseTorg12
                 continue;
             }
 
-            $invoiceRow = new InvoiceRow();
+            $invoiceRow = new models\InvoiceRow();
 
             // порядковый номер
             $invoiceRow->num = (int)$this->normalizeCellValue($ws->getCellByColumnAndRow($this->columnList['num']['col'], $row)->getValue());
@@ -550,7 +547,7 @@ class ParseTorg12
             // код товара
             $invoiceRow->code = $this->normalizeCellValue($ws->getCellByColumnAndRow($this->columnList['code']['col'], $row)->getValue());
             if (!$invoiceRow->code) {
-                $invoiceRow->warning_list['code'] = 'Не указан код товара';
+                $invoiceRow->errors['code'] = 'Не указан код товара';
             }
 
             // название товара
@@ -590,7 +587,7 @@ class ParseTorg12
             }
 
             if (!$invoiceRow->price_with_tax) {
-                $invoiceRow->warning_list['price_with_tax'] = 'Не указана цена с учетом НДС';
+                $invoiceRow->errors['price_with_tax'] = 'Не указана цена с учетом НДС';
             }
 
             // НДС
@@ -602,10 +599,10 @@ class ParseTorg12
                 $invoiceRow->tax_rate = $taxRate;
             } elseif (isset($this->defaultTaxRate)) {
                 $invoiceRow->tax_rate = $this->defaultTaxRate;
-                $invoiceRow->warning_list['tax_rate'] = sprintf('Установлено значение НДС по умолчанию: %d', $this->defaultTaxRate);
+                $invoiceRow->errors['tax_rate'] = sprintf('Установлено значение НДС по умолчанию: %d', $this->defaultTaxRate);
             } else {
-                $invoiceRow->warning_list['tax_rate'] = sprintf('Значение НДС "%s" отсутсвует в списке доступных', $taxRate);
-                $this->criticalErrors['tax_rate'] = 'В накладной присутсвует товар с некорректной ставкой НДС';
+                $invoiceRow->errors['tax_rate'] = sprintf('Значение НДС "%s" отсутсвует в списке доступных', $taxRate);
+                $this->invoice->errors['tax_rate'] = 'В накладной присутсвует товар с некорректной ставкой НДС';
             }
 
             // проверка корректности указанной ставки НДС
@@ -614,8 +611,8 @@ class ParseTorg12
             $diffPriceWithTax = abs($calcPriceWithTax - $priceWithTax);
             // погрешность 1 руб.
             if ($diffPriceWithTax > 1) {
-                $invoiceRow->warning_list['diff_price_with_tax'] = sprintf('Некорректно указана ставка НДС (Цена с учётом НДС: %s, Рассчитанная цена с учетом НДС: %s', $priceWithTax, $calcPriceWithTax);
-                $this->criticalErrors['diff_price_with_tax'] = 'В накладной присутсвует товар, по которому указана некорректная цена или ставка НДС';
+                $invoiceRow->errors['diff_price_with_tax'] = sprintf('Некорректно указана ставка НДС (Цена с учётом НДС: %s, Рассчитанная цена с учетом НДС: %s', $priceWithTax, $calcPriceWithTax);
+                $this->invoice->errors['diff_price_with_tax'] = 'В накладной присутсвует товар, по которому указана некорректная цена или ставка НДС';
             }
 
             // добавляем обработанную строку в накладную
