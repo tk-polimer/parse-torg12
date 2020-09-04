@@ -569,20 +569,22 @@ class ParseTorg12
             }
 
             // цена c НДС
-            if (isset($this->columnList['price_with_tax'])) {
+            if (isset($this->columnList['sum_with_tax'])) {
 
-                $invoiceRow->price_with_tax = (float)$this->normalizeCellValue($ws->getCellByColumnAndRow($this->columnList['price_with_tax']['col'], $row)->getValue(), true);
-                $this->invoice->price_with_tax_sum += $invoiceRow->price_with_tax * $invoiceRow->cnt;
-
-            } elseif (isset($this->columnList['sum_with_tax'])) {
-
-                $sumWithTax = $this->normalizeCellValue($ws->getCellByColumnAndRow($this->columnList['sum_with_tax']['col'], $row)->getValue(), true);
+                $sumWithTax = (float) $this->normalizeCellValue($ws->getCellByColumnAndRow($this->columnList['sum_with_tax']['col'], $row)->getValue(), true);
                 if ($sumWithTax) {
-                    if ((int)$invoiceRow->cnt > 0) {
+                    $invoiceRow->price_with_tax_sum = $sumWithTax;
+                    if ((int) $invoiceRow->cnt > 0) {
                         $invoiceRow->price_with_tax = round($sumWithTax / $invoiceRow->cnt, 4);
                     }
                     $this->invoice->price_with_tax_sum += $sumWithTax;
                 }
+
+            } elseif (isset($this->columnList['price_with_tax'])) {
+
+                $invoiceRow->price_with_tax = (float) $this->normalizeCellValue($ws->getCellByColumnAndRow($this->columnList['price_with_tax']['col'], $row)->getValue(), true);
+                $invoiceRow->price_with_tax_sum = $invoiceRow->price_with_tax * $invoiceRow->cnt;
+                $this->invoice->price_with_tax_sum += $invoiceRow->price_with_tax_sum;
 
             }
 

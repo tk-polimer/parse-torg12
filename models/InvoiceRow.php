@@ -57,4 +57,11 @@ class InvoiceRow extends Model
      */
     public $cnt;
 
+    /**
+     * Сумма с учетом НДС
+     *
+     * @var float
+     */
+    public $price_with_tax_sum;
+
 }
