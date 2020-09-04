@@ -575,7 +575,7 @@ class ParseTorg12
                 if ($sumWithTax) {
                     $invoiceRow->price_with_tax_sum = $sumWithTax;
                     if ((int) $invoiceRow->cnt > 0) {
-                        $invoiceRow->price_with_tax = round($sumWithTax / $invoiceRow->cnt, 4);
+                        $invoiceRow->price_with_tax = $sumWithTax / $invoiceRow->cnt;
                     }
                     $this->invoice->price_with_tax_sum += $sumWithTax;
                 }
