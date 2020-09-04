@@ -1,26 +1,26 @@
 {
-    "name": "golovchanskiy/parse-torg12",
-    "description": "Parse TORG12 from Excel (.xls, .xlsx)",
-    "keywords": [
-        "phpexcel",
-        "xlsx",
-        "xls",
-        "torg12",
-        "invoice"
-    ],
-    "license": "BSD-3-Clause",
-    "authors": [
-        {
-            "name": "Anton Golovchanskiy",
-            "email": "Anton.Golovchanskiy@gmail.com"
-        }
-    ],
-    "require": {
-        "PHPOffice/PHPExcel": "1.8.*"
-    },
-    "autoload": {
-        "psr-4": {
-            "golovchanskiy\\parseTorg12\\": ""
-        }
+  "name": "tk-polimer/parse-torg12",
+  "description": "Parse TORG12 from Excel (.xls, .xlsx)",
+  "keywords": [
+    "phpexcel",
+    "xlsx",
+    "xls",
+    "torg12",
+    "invoice"
+  ],
+  "license": "BSD-3-Clause",
+  "authors": [
+    {
+      "name": "Anton Golovchanskiy",
+      "email": "Anton.Golovchanskiy@gmail.com"
     }
+  ],
+  "require": {
+    "PHPOffice/PHPExcel": "1.8.*"
+  },
+  "autoload": {
+    "psr-4": {
+      "golovchanskiy\\parseTorg12\\": ""
+    }
+  }
 }
