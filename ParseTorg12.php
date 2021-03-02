@@ -4,6 +4,9 @@ namespace golovchanskiy\parseTorg12;
 
 use golovchanskiy\parseTorg12\models as models;
 use golovchanskiy\parseTorg12\exceptions\ParseTorg12Exception;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 /**
  * Разобрать товарную накладную по форме ТОРГ12 в формате Excel (.xls, .xlsx)
@@ -14,12 +17,17 @@ class ParseTorg12
 {
 
     /**
+     * Товарная накладная
+     *
+     * @var models\Invoice
+     */
+    public $invoice;
+    /**
      * Путь к файлу
      *
      * @var string
      */
     private $filePath;
-
     /**
      * Допустимые значения ставки НДС
      * По умолчанию доступны: 0, 10, 18
@@ -27,7 +35,6 @@ class ParseTorg12
      * @var string
      */
     private $taxRateList;
-
     /**
      * Ставка НДС по-умолчанию (устаналивается, если не удалось определить ставку)
      * По умолчанию: 18
@@ -35,14 +42,6 @@ class ParseTorg12
      * @var string
      */
     private $defaultTaxRate;
-
-    /**
-     * Товарная накладная
-     *
-     * @var models\Invoice
-     */
-    public $invoice;
-
     /**
      * Атрибуты заголовка накладной
      *
@@ -67,11 +66,20 @@ class ParseTorg12
     private $settingsRow = [
         'num' => ['№', '№№', '№ п/п', 'номер по порядку'],
         'name' => ['название', 'наименование', 'наименование, характеристика, сорт, артикул товара'],
-        'code' => ['код', 'isbn', 'ean', 'артикул', 'артикул поставщика', 'код товара поставщика', 'код (артикул)', 'штрих-код'],
-        'cnt' => ['кол-во', 'количество', 'кол-во экз.', 'общее кол-во', 'количество (масса нетто)', 'коли-чество (масса нетто)'],
+        'code' => [
+            'код', 'isbn', 'ean', 'артикул', 'артикул поставщика', 'код товара поставщика', 'код (артикул)',
+            'штрих-код',
+        ],
+        'cnt' => [
+            'кол-во', 'количество', 'кол-во экз.', 'общее кол-во', 'количество (масса нетто)',
+            'коли-чество (масса нетто)',
+        ],
         'cnt_place' => ['мест, штук'],
         'not_cnt' => ['в одном месте'],
-        'price_without_tax' => ['цена', 'цена без ндс', 'цена без ндс, руб.', 'цена без ндс руб.', 'цена без учета ндс', 'цена без учета ндс, руб.', 'цена без учета ндс руб.', 'цена, руб. коп.'],
+        'price_without_tax' => [
+            'цена', 'цена без ндс', 'цена без ндс, руб.', 'цена без ндс руб.', 'цена без учета ндс',
+            'цена без учета ндс, руб.', 'цена без учета ндс руб.', 'цена, руб. коп.',
+        ],
         'price_with_tax' => ['цена с ндс, руб.', 'цена с ндс руб.', 'цена, руб.', 'цена руб.'],
         'sum_with_tax' => 'сумма.*с.*ндс', // regexp
         'tax_rate' => ['ндс, %', 'ндс %', 'ставка ндс, %', 'ставка ндс %', 'ставка ндс', 'ставка, %', 'ставка %'],
@@ -81,12 +89,12 @@ class ParseTorg12
     /**
      * Активный лист документа
      *
-     * @var \PHPExcel_Worksheet
+     * @var Worksheet
      */
     private $worksheet;
 
     private $firstRow = 0; // номер строки, которую считаем началом заголовка
-    private $startRow = NULL; // номер строки, которую считаем началом строк накладной
+    private $startRow = null; // номер строки, которую считаем началом строк накладной
     private $highestRow; // номер последней строки
     private $highestColumn; // номер последнего столбца
 
@@ -94,9 +102,9 @@ class ParseTorg12
     private $rowsToProcess = []; // номера строк с нужными данными по накладной
 
     /**
-     * @param string $filePath Путь к файлу
-     * @param array $taxRateList Список доступных ставкок НДС
-     * @param int $defaultTaxRate Ставка НДС по умолчанию
+     * @param string $filePath       Путь к файлу
+     * @param array  $taxRateList    Список доступных ставкок НДС
+     * @param int    $defaultTaxRate Ставка НДС по умолчанию
      */
     public function __construct($filePath, array $taxRateList = [0, 10, 18], $defaultTaxRate = 18)
     {
@@ -119,9 +127,9 @@ class ParseTorg12
 
         // читаем файл в формате Excel по форме ТОРГ12
         try {
-            $objPHPExcel = \PHPExcel_IOFactory::load($this->filePath);
+            $objPHPExcel = IOFactory::load($this->filePath);
         } catch (\Exception $e) {
-            $errorMsg = 'Невозможно прочитать загруженный файл: ' . $e->getMessage();
+            $errorMsg = 'Невозможно прочитать загруженный файл: '.$e->getMessage();
             throw new ParseTorg12Exception($errorMsg);
         }
 
@@ -137,7 +145,7 @@ class ParseTorg12
             // определяем последнюю строку документа
             $this->highestRow = $this->worksheet->getHighestRow();
             // определяем последний столбец документа
-            $this->highestColumn = \PHPExcel_Cell::columnIndexFromString($this->worksheet->getHighestColumn());
+            $this->highestColumn = Coordinate::columnIndexFromString($this->worksheet->getHighestColumn());
 
             // разбираем заголовок накладной
             $this->parseHeader();
@@ -171,7 +179,7 @@ class ParseTorg12
      *
      * @param \PHPExcel_Worksheet $worksheet
      */
-    private function setWorksheet(\PHPExcel_Worksheet $worksheet)
+    private function setWorksheet(Worksheet $worksheet)
     {
         $this->worksheet = $worksheet;
         $this->rowsToProcess = [];
@@ -184,7 +192,7 @@ class ParseTorg12
      *  - удаляем переносы строк
      *
      * @param string $cellValue Содержимое ячейки
-     * @param bool $toLower Перевести все символы в нижний регистр
+     * @param bool   $toLower   Перевести все символы в нижний регистр
      * @return string
      */
     private function normalizeHeaderCellValue($cellValue, $toLower = true)
@@ -196,7 +204,7 @@ class ParseTorg12
         }
 
         // удаляем странные пробелы, состоящие из 2 символов
-        $cellValue = str_replace(chr(194) . chr(160), " ", $cellValue);
+        $cellValue = str_replace(chr(194).chr(160), " ", $cellValue);
         // удаляем переносы строк
         $cellValue = str_replace("\n", " ", $cellValue);
         // удаляем ручные переносы строк "- "
@@ -214,7 +222,7 @@ class ParseTorg12
      *  - заменяем "," на ".", если в ячейке должно быть число
      *
      * @param string $cellValue Содержимое ячейки
-     * @param bool $isNumber Число
+     * @param bool   $isNumber  Число
      * @return string
      */
     private function normalizeCellValue($cellValue, $isNumber = false)
@@ -226,7 +234,7 @@ class ParseTorg12
         }
 
         // удаляем странные пробелы, состоящие из 2 символов
-        $cellValue = str_replace(chr(194) . chr(160), " ", $cellValue);
+        $cellValue = str_replace(chr(194).chr(160), " ", $cellValue);
         // удаляем переносы строк
         $cellValue = str_replace("\n", " ", $cellValue);
         $cellValue = str_replace("  ", " ", $cellValue);
@@ -266,7 +274,7 @@ class ParseTorg12
                 }
             }
 
-            return NULL;
+            return null;
         };
 
         // запоминаем координаты номера накладной
@@ -317,7 +325,7 @@ class ParseTorg12
             if (is_array($setting)) {
                 return in_array($cellValue, $setting);
             } elseif (is_string($setting)) {
-                return (bool)preg_match('#' . $setting . '#siu', $cellValue);
+                return (bool) preg_match('#'.$setting.'#siu', $cellValue);
             } else {
                 return false;
             }
@@ -424,7 +432,7 @@ class ParseTorg12
         } elseif (!isset($this->columnList['cnt']) && !isset($this->columnList['cnt_place'])) {
 
             $msg = 'Необходимо добавить столбец, содержащий количество товара ("%s")';
-            $headErrors[] = sprintf($msg, implode('"; "', array_merge($this->settingsRow['cnt'], (array)$this->settingsRow['cnt_place'])));
+            $headErrors[] = sprintf($msg, implode('"; "', array_merge($this->settingsRow['cnt'], (array) $this->settingsRow['cnt_place'])));
 
         } elseif (!isset($this->columnList['price_without_tax'])) {
 
@@ -434,7 +442,7 @@ class ParseTorg12
         } elseif (!isset($this->columnList['price_with_tax']) && !isset($this->columnList['sum_with_tax'])) {
 
             $msg = 'Необходимо добавить столбец, содержащий цену товара c НДС ("%s")';
-            $headErrors[] = sprintf($msg, implode('"; "', array_merge($this->settingsRow['price_with_tax'], (array)$this->settingsRow['sum_with_tax'])));
+            $headErrors[] = sprintf($msg, implode('"; "', array_merge($this->settingsRow['price_with_tax'], (array) $this->settingsRow['sum_with_tax'])));
 
         } elseif (!isset($this->columnList['tax_rate'])) {
 
@@ -481,7 +489,7 @@ class ParseTorg12
     /**
      * Проверить не является ли строка заголовком, т.к. ТОРГ12 может содержать несколько заголовков
      *
-     * @param int $rowNumber Номер строки
+     * @param int   $rowNumber  Номер строки
      * @param array $currentRow Содержимое строки
      * @return bool
      */
@@ -542,7 +550,7 @@ class ParseTorg12
             $invoiceRow = new models\InvoiceRow();
 
             // порядковый номер
-            $invoiceRow->num = (int)$this->normalizeCellValue($ws->getCellByColumnAndRow($this->columnList['num']['col'], $row)->getValue());
+            $invoiceRow->num = (int) $this->normalizeCellValue($ws->getCellByColumnAndRow($this->columnList['num']['col'], $row)->getValue());
 
             // код товара
             $invoiceRow->code = $this->normalizeCellValue($ws->getCellByColumnAndRow($this->columnList['code']['col'], $row)->getValue());
@@ -555,15 +563,15 @@ class ParseTorg12
 
             // количество
             if (isset($this->columnList['cnt'])) {
-                $invoiceRow->cnt = (int)$this->normalizeCellValue($ws->getCellByColumnAndRow($this->columnList['cnt']['col'], $row)->getValue(), true);
+                $invoiceRow->cnt = (int) $this->normalizeCellValue($ws->getCellByColumnAndRow($this->columnList['cnt']['col'], $row)->getValue(), true);
             }
 
             if (!$invoiceRow->cnt && isset($this->columnList['cnt_place'])) {
-                $invoiceRow->cnt = (int)$this->normalizeCellValue($ws->getCellByColumnAndRow($this->columnList['cnt_place']['col'], $row)->getValue(), true);
+                $invoiceRow->cnt = (int) $this->normalizeCellValue($ws->getCellByColumnAndRow($this->columnList['cnt_place']['col'], $row)->getValue(), true);
             }
 
             // цена без НДС
-            $invoiceRow->price_without_tax = (float)$this->normalizeCellValue($ws->getCellByColumnAndRow($this->columnList['price_without_tax']['col'], $row)->getValue(), true);
+            $invoiceRow->price_without_tax = (float) $this->normalizeCellValue($ws->getCellByColumnAndRow($this->columnList['price_without_tax']['col'], $row)->getValue(), true);
             if ($invoiceRow->price_without_tax) {
                 $this->invoice->price_without_tax_sum += $invoiceRow->price_without_tax * $invoiceRow->cnt;
             }
